@@ -5,14 +5,14 @@
 -- @Audited CreditAccount entity, then hand-committed here since the app owns
 -- its schema via Flyway (ddl-auto=validate) rather than auto-generation.
 
-CREATE SEQUENCE revinfo_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS revinfo_seq START WITH 1 INCREMENT BY 50;
 
-CREATE TABLE revinfo (
+CREATE TABLE IF NOT EXISTS revinfo (
     rev      INTEGER NOT NULL PRIMARY KEY,
     revtstmp BIGINT
 );
 
-CREATE TABLE credit_accounts_aud (
+CREATE TABLE IF NOT EXISTS credit_accounts_aud (
     id                 UUID NOT NULL,
     rev                INTEGER NOT NULL REFERENCES revinfo(rev),
     revtype            SMALLINT,
