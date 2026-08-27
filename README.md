@@ -140,3 +140,4 @@ Honnetement, voici ce qui reste a faire avant une mise en production reelle :
 - **Pas de generation de facture PDF** (seul un export CSV existe cote back-office).
 
 Ce projet reste une base technique complete et fonctionnelle : authentification JWT asymetrique, moteur FEFO avec verrous concurrents, moteur de credit avec tache planifiee, audit trail Envers, isolation multi-tenant testee, et deploiement cloud operationnel.
+
