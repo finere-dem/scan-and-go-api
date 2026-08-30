@@ -41,6 +41,16 @@ public class User {
     @Column(nullable = false, length = 40)
     private UserRole role;
 
+    /** Set only for staff scoped to a single depot (ROLE_LOGISTICS_OPERATOR) rather than the whole org. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_warehouse_id")
+    private Warehouse assignedWarehouse;
+
+    /** Set only for staff scoped to a single shop (ROLE_BOUTIQUE_STAFF) rather than the whole org. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_boutique_id")
+    private Boutique assignedBoutique;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
