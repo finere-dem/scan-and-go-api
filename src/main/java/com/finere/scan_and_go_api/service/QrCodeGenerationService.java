@@ -103,6 +103,14 @@ public class QrCodeGenerationService {
         return pdfLabelSheetService.renderA4Sheet(labelItems);
     }
 
+    /** Used when a QR is generated as part of order fulfillment rather than catalog management -
+     * authorization there is based on the order's buyer/seller org, not the product's importer,
+     * so it's the caller's job to authorize before calling this. */
+    @Transactional
+    public QrCodeResult generateForOrderFulfillment(Product product, ProductLot lot) {
+        return generate(product, lot, QrMatrixType.LOT_SPECIFIC);
+    }
+
     private QrCodeResult generate(Product product, ProductLot lot, QrMatrixType matrixType) {
         String publicToken = UUID.randomUUID().toString().replace("-", "");
         String signature = sign(publicToken);

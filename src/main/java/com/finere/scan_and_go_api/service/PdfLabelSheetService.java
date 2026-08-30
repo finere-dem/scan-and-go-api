@@ -37,6 +37,7 @@ public class PdfLabelSheetService {
 
             Font nameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9);
             Font detailFont = FontFactory.getFont(FontFactory.HELVETICA, 7);
+            Font priceFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
 
             for (int pageStart = 0; pageStart < items.size(); pageStart += CELLS_PER_PAGE) {
                 PdfPTable table = new PdfPTable(COLUMNS);
@@ -44,7 +45,7 @@ public class PdfLabelSheetService {
 
                 int pageEnd = Math.min(pageStart + CELLS_PER_PAGE, items.size());
                 for (int i = pageStart; i < pageEnd; i++) {
-                    table.addCell(buildLabelCell(items.get(i), nameFont, detailFont));
+                    table.addCell(buildLabelCell(items.get(i), nameFont, detailFont, priceFont));
                 }
 
                 int remainder = (pageEnd - pageStart) % COLUMNS;
@@ -67,7 +68,7 @@ public class PdfLabelSheetService {
         }
     }
 
-    private PdfPCell buildLabelCell(LabelItem item, Font nameFont, Font detailFont) throws IOException, DocumentException {
+    private PdfPCell buildLabelCell(LabelItem item, Font nameFont, Font detailFont, Font priceFont) throws IOException, DocumentException {
         PdfPTable inner = new PdfPTable(1);
         inner.setWidthPercentage(100);
 
@@ -84,6 +85,9 @@ public class PdfLabelSheetService {
         inner.addCell(textCell("SKU: " + item.sku(), detailFont));
         if (item.lotNumber() != null) {
             inner.addCell(textCell("Lot: " + item.lotNumber(), detailFont));
+        }
+        if (item.priceLabel() != null) {
+            inner.addCell(textCell(item.priceLabel(), priceFont));
         }
 
         PdfPCell outer = new PdfPCell(inner);
