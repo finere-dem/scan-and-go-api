@@ -7,13 +7,22 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProductLotRepository extends JpaRepository<ProductLot, UUID> {
 
     List<ProductLot> findByWarehouseId(UUID warehouseId);
 
+    List<ProductLot> findByBoutiqueId(UUID boutiqueId);
+
     List<ProductLot> findByProductId(UUID productId);
+
+    /** Used when receiving an order's goods: increments an existing lot of the same batch
+     * rather than creating a duplicate row if this exact lot was already received before. */
+    Optional<ProductLot> findByProductIdAndWarehouseIdAndLotNumber(UUID productId, UUID warehouseId, String lotNumber);
+
+    Optional<ProductLot> findByProductIdAndBoutiqueIdAndLotNumber(UUID productId, UUID boutiqueId, String lotNumber);
 
     /**
      * FEFO candidates: active, non-expired, in-stock lots for the given product/warehouse,

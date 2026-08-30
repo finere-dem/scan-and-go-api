@@ -34,6 +34,8 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final PricingPolicyRepository pricingPolicyRepository;
     private final ProductLotRepository productLotRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final BoutiqueRepository boutiqueRepository;
     private final InvoiceRepository invoiceRepository;
     private final InventoryAllocationService inventoryAllocationService;
     private final CreditManagementService creditManagementService;
@@ -55,6 +57,18 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown buyer organization: " + request.buyerOrgId()));
         Organization sellerOrg = organizationRepository.findById(request.sellerOrgId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown seller organization: " + request.sellerOrgId()));
+
+        if (request.receivingWarehouseId() != null && request.receivingBoutiqueId() != null) {
+            throw new IllegalArgumentException("An order can only receive stock into one location, not both");
+        }
+        Warehouse receivingWarehouse = request.receivingWarehouseId() != null
+                ? warehouseRepository.findById(request.receivingWarehouseId())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown warehouse: " + request.receivingWarehouseId()))
+                : null;
+        Boutique receivingBoutique = request.receivingBoutiqueId() != null
+                ? boutiqueRepository.findById(request.receivingBoutiqueId())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown boutique: " + request.receivingBoutiqueId()))
+                : null;
 
         TargetOrgType targetOrgType = resolveTargetOrgType(buyerOrg.getOrgType());
 
@@ -85,6 +99,8 @@ public class OrderService {
         order.setClientSyncId(request.clientSyncId());
         order.setTotalAmount(total);
         order.setOrderStatus(OrderStatus.CONFIRMED);
+        order.setReceivingWarehouse(receivingWarehouse);
+        order.setReceivingBoutique(receivingBoutique);
 
         List<LotAllocation> allAllocationsSoFar = new ArrayList<>();
         try {
@@ -113,12 +129,54 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
 
+        if (receivingWarehouse != null || receivingBoutique != null) {
+            receiveIntoBuyerStock(saved, receivingWarehouse, receivingBoutique);
+        }
+
         if (request.paymentMode().isCredit()) {
             creditManagementService.increaseBalance(sellerOrg.getId(), buyerOrg.getId(), total);
             createInvoice(saved, request.paymentMode().termDays());
         }
 
         return toResponse(saved);
+    }
+
+    /** Mirrors the physical handoff a delivery represents: the same batch that just left the
+     * seller's depot becomes stock the buyer can sell from, in whichever of their own locations
+     * they asked for. Increments an existing lot of the same batch/location rather than
+     * duplicating a row if this exact lot was already received there before. */
+    private void receiveIntoBuyerStock(Order order, Warehouse receivingWarehouse, Boutique receivingBoutique) {
+        for (OrderItem item : order.getItems()) {
+            ProductLot sourceLot = item.getLot();
+            if (sourceLot == null) {
+                continue;
+            }
+
+            var existingLot = receivingWarehouse != null
+                    ? productLotRepository.findByProductIdAndWarehouseIdAndLotNumber(
+                            item.getProduct().getId(), receivingWarehouse.getId(), sourceLot.getLotNumber())
+                    : productLotRepository.findByProductIdAndBoutiqueIdAndLotNumber(
+                            item.getProduct().getId(), receivingBoutique.getId(), sourceLot.getLotNumber());
+
+            if (existingLot.isPresent()) {
+                ProductLot lot = existingLot.get();
+                lot.setCurrentQuantity(lot.getCurrentQuantity() + item.getQuantity());
+                lot.setInitialQuantity(lot.getInitialQuantity() + item.getQuantity());
+                productLotRepository.save(lot);
+            } else {
+                ProductLot lot = new ProductLot();
+                lot.setProduct(item.getProduct());
+                lot.setWarehouse(receivingWarehouse);
+                lot.setBoutique(receivingBoutique);
+                lot.setLotNumber(sourceLot.getLotNumber());
+                lot.setMfgDate(sourceLot.getMfgDate());
+                lot.setExpDate(sourceLot.getExpDate());
+                lot.setInitialQuantity(item.getQuantity());
+                lot.setCurrentQuantity(item.getQuantity());
+                lot.setUnitCost(item.getUnitPrice());
+                productLotRepository.save(lot);
+            }
+        }
     }
 
     @Transactional(readOnly = true)
@@ -199,6 +257,8 @@ public class OrderService {
                 order.getPaymentMode(),
                 order.getOrderStatus(),
                 order.getClientSyncId(),
+                order.getReceivingWarehouse() != null ? order.getReceivingWarehouse().getId() : null,
+                order.getReceivingBoutique() != null ? order.getReceivingBoutique().getId() : null,
                 order.getCreatedAt(),
                 items);
     }

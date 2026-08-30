@@ -28,9 +28,15 @@ public class ProductLot {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "warehouse_id", nullable = false)
+    /** Exactly one of warehouse/boutique is set - a lot lives in a storage depot
+     * (seller-side stock) or in a shop (buyer-side stock received from an order), never both. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id")
     private Warehouse warehouse;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "boutique_id")
+    private Boutique boutique;
 
     @Column(name = "lot_number", nullable = false)
     private String lotNumber;

@@ -10,12 +10,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/** Exactly one of warehouseId/boutiqueId must be provided - a lot lives in one
+ * or the other, never both, never neither. */
 public record ProductLotRequest(
         @NotNull(message = "Product is required")
         UUID productId,
 
-        @NotNull(message = "Warehouse is required")
         UUID warehouseId,
+
+        UUID boutiqueId,
 
         @NotBlank(message = "Lot number is required")
         String lotNumber,

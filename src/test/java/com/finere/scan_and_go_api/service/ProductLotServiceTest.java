@@ -42,7 +42,7 @@ class ProductLotServiceTest {
     private final UUID warehouseOrgId = UUID.randomUUID();
 
     private ProductLotRequest request(LocalDate mfgDate, LocalDate expDate) {
-        return new ProductLotRequest(productId, warehouseId, "LOT-1", mfgDate, expDate, 10, null);
+        return new ProductLotRequest(productId, warehouseId, null, "LOT-1", mfgDate, expDate, 10, null);
     }
 
     @BeforeEach

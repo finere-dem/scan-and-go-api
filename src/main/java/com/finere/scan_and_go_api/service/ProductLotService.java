@@ -1,10 +1,12 @@
 package com.finere.scan_and_go_api.service;
 
+import com.finere.scan_and_go_api.domain.entity.Boutique;
 import com.finere.scan_and_go_api.domain.entity.Product;
 import com.finere.scan_and_go_api.domain.entity.ProductLot;
 import com.finere.scan_and_go_api.domain.entity.Warehouse;
 import com.finere.scan_and_go_api.dto.product.ProductLotRequest;
 import com.finere.scan_and_go_api.dto.product.ProductLotResponse;
+import com.finere.scan_and_go_api.repository.BoutiqueRepository;
 import com.finere.scan_and_go_api.repository.ProductLotRepository;
 import com.finere.scan_and_go_api.repository.ProductRepository;
 import com.finere.scan_and_go_api.repository.WarehouseRepository;
@@ -23,6 +25,7 @@ public class ProductLotService {
     private final ProductLotRepository productLotRepository;
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
+    private final BoutiqueRepository boutiqueRepository;
     private final CurrentUserService currentUserService;
 
     @Transactional
@@ -30,19 +33,30 @@ public class ProductLotService {
         if (!request.expDate().isAfter(request.mfgDate())) {
             throw new IllegalArgumentException("Expiry date must be after manufacturing date");
         }
+        if ((request.warehouseId() == null) == (request.boutiqueId() == null)) {
+            throw new IllegalArgumentException("Exactly one of warehouseId or boutiqueId must be provided");
+        }
 
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown product: " + request.productId()));
-        Warehouse warehouse = warehouseRepository.findById(request.warehouseId())
-                .orElseThrow(() -> new IllegalArgumentException("Unknown warehouse: " + request.warehouseId()));
-
-        // Scoped to the warehouse's owning org: whoever physically operates the depot is who
-        // may record a receiving lot into it, regardless of which importer catalogued the product.
-        currentUserService.requireSameOrgOrSuperAdmin(warehouse.getOrganization().getId());
 
         ProductLot lot = new ProductLot();
         lot.setProduct(product);
-        lot.setWarehouse(warehouse);
+
+        if (request.warehouseId() != null) {
+            Warehouse warehouse = warehouseRepository.findById(request.warehouseId())
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown warehouse: " + request.warehouseId()));
+            // Scoped to the warehouse's owning org: whoever physically operates the depot is who
+            // may record a receiving lot into it, regardless of which importer catalogued the product.
+            currentUserService.requireSameOrgOrSuperAdmin(warehouse.getOrganization().getId());
+            lot.setWarehouse(warehouse);
+        } else {
+            Boutique boutique = boutiqueRepository.findById(request.boutiqueId())
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown boutique: " + request.boutiqueId()));
+            currentUserService.requireSameOrgOrSuperAdmin(boutique.getOrganization().getId());
+            lot.setBoutique(boutique);
+        }
+
         lot.setLotNumber(request.lotNumber());
         lot.setMfgDate(request.mfgDate());
         lot.setExpDate(request.expDate());
@@ -59,6 +73,11 @@ public class ProductLotService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProductLotResponse> listByBoutique(UUID boutiqueId) {
+        return productLotRepository.findByBoutiqueId(boutiqueId).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<ProductLotResponse> listByProduct(UUID productId) {
         return productLotRepository.findByProductId(productId).stream().map(this::toResponse).toList();
     }
@@ -67,7 +86,8 @@ public class ProductLotService {
         return new ProductLotResponse(
                 lot.getId(),
                 lot.getProduct().getId(),
-                lot.getWarehouse().getId(),
+                lot.getWarehouse() != null ? lot.getWarehouse().getId() : null,
+                lot.getBoutique() != null ? lot.getBoutique().getId() : null,
                 lot.getLotNumber(),
                 lot.getMfgDate(),
                 lot.getExpDate(),

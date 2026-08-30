@@ -48,6 +48,16 @@ public class Order {
     @Column(name = "client_sync_id", unique = true)
     private UUID clientSyncId;
 
+    /** Where this order's goods were received into the buyer's own stock, if at all -
+     * at most one of the two is set. Null means the buyer didn't ask to receive stock locally. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiving_warehouse_id")
+    private Warehouse receivingWarehouse;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiving_boutique_id")
+    private Boutique receivingBoutique;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 

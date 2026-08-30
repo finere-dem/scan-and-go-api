@@ -10,6 +10,7 @@ public record ProductLotResponse(
         UUID id,
         UUID productId,
         UUID warehouseId,
+        UUID boutiqueId,
         String lotNumber,
         LocalDate mfgDate,
         LocalDate expDate,

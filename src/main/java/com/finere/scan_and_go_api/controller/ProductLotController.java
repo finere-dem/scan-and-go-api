@@ -21,7 +21,7 @@ public class ProductLotController {
     private final ProductLotService productLotService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'IMPORTER_ADMIN', 'LOGISTICS_OPERATOR', 'WHOLESALER_ADMIN', 'RETAILER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'IMPORTER_ADMIN', 'LOGISTICS_OPERATOR', 'WHOLESALER_ADMIN', 'RETAILER_ADMIN', 'BOUTIQUE_STAFF')")
     public ResponseEntity<ProductLotResponse> create(@Valid @RequestBody ProductLotRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productLotService.create(request));
     }
@@ -29,13 +29,17 @@ public class ProductLotController {
     @GetMapping
     public ResponseEntity<List<ProductLotResponse>> list(
             @RequestParam(required = false) UUID warehouseId,
+            @RequestParam(required = false) UUID boutiqueId,
             @RequestParam(required = false) UUID productId) {
         if (warehouseId != null) {
             return ResponseEntity.ok(productLotService.listByWarehouse(warehouseId));
         }
+        if (boutiqueId != null) {
+            return ResponseEntity.ok(productLotService.listByBoutique(boutiqueId));
+        }
         if (productId != null) {
             return ResponseEntity.ok(productLotService.listByProduct(productId));
         }
-        throw new IllegalArgumentException("Either warehouseId or productId must be provided");
+        throw new IllegalArgumentException("Either warehouseId, boutiqueId, or productId must be provided");
     }
 }

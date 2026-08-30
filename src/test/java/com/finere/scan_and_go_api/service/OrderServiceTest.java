@@ -98,7 +98,7 @@ class OrderServiceTest {
 
     private OrderCreateRequest request(PaymentMode paymentMode, int quantity) {
         return new OrderCreateRequest(
-                buyerOrgId, sellerOrgId, paymentMode, null,
+                buyerOrgId, sellerOrgId, paymentMode, null, null, null,
                 List.of(new OrderItemRequest(productId, warehouseId, quantity)));
     }
 
@@ -208,7 +208,7 @@ class OrderServiceTest {
                 .thenThrow(new InsufficientStockException("not enough for second item"));
 
         OrderCreateRequest request = new OrderCreateRequest(
-                buyerOrgId, sellerOrgId, PaymentMode.CASH, null,
+                buyerOrgId, sellerOrgId, PaymentMode.CASH, null, null, null,
                 List.of(
                         new OrderItemRequest(productId, warehouseId, 5),
                         new OrderItemRequest(secondProductId, warehouseId, 2)));
@@ -233,7 +233,7 @@ class OrderServiceTest {
         when(orderRepository.findByClientSyncId(clientSyncId)).thenReturn(Optional.of(existing));
 
         OrderCreateRequest request = new OrderCreateRequest(
-                buyerOrgId, sellerOrgId, PaymentMode.CASH, clientSyncId,
+                buyerOrgId, sellerOrgId, PaymentMode.CASH, clientSyncId, null, null,
                 List.of(new OrderItemRequest(productId, warehouseId, 5)));
 
         OrderResponse response = orderService.createOrder(request);

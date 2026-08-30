@@ -17,6 +17,8 @@ public record OrderResponse(
         PaymentMode paymentMode,
         OrderStatus orderStatus,
         UUID clientSyncId,
+        UUID receivingWarehouseId,
+        UUID receivingBoutiqueId,
         Instant createdAt,
         List<OrderItemResponse> items
 ) {
