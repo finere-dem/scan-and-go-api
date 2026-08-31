@@ -22,6 +22,15 @@ public class CurrentUserService {
                 .orElseThrow(() -> new AccessDeniedException("Current user is not attached to an organization"));
     }
 
+    public UUID requireUserId() {
+        return currentAuthentication()
+                .map(Authentication::getPrincipal)
+                .filter(CustomUserDetails.class::isInstance)
+                .map(CustomUserDetails.class::cast)
+                .map(CustomUserDetails::getId)
+                .orElseThrow(() -> new AccessDeniedException("No authenticated user"));
+    }
+
     public boolean isSuperAdmin() {
         return hasRole("ROLE_SUPER_ADMIN");
     }
