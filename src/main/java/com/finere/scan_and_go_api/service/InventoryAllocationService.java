@@ -30,11 +30,24 @@ public class InventoryAllocationService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<LotAllocation> allocateStock(UUID warehouseId, UUID productId, int requestedQuantity) {
+        List<ProductLot> lots = productLotRepository.findAllocatableLotsForUpdate(productId, warehouseId);
+        return allocateFrom(lots, productId, requestedQuantity, "warehouse " + warehouseId);
+    }
+
+    /** Same as {@link #allocateStock} but sells straight out of a boutique's own stock rather
+     * than a depot - the FEFO allocation a POS/checkout sale needs. Also naturally blocks selling
+     * an expired lot, since {@link ProductLotRepository#findAllocatableLotsForUpdateAtBoutique}
+     * only returns lots whose expiry date is still in the future. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<LotAllocation> allocateStockAtBoutique(UUID boutiqueId, UUID productId, int requestedQuantity) {
+        List<ProductLot> lots = productLotRepository.findAllocatableLotsForUpdateAtBoutique(productId, boutiqueId);
+        return allocateFrom(lots, productId, requestedQuantity, "boutique " + boutiqueId);
+    }
+
+    private List<LotAllocation> allocateFrom(List<ProductLot> lots, UUID productId, int requestedQuantity, String locationDescription) {
         if (requestedQuantity <= 0) {
             throw new IllegalArgumentException("Requested quantity must be positive");
         }
-
-        List<ProductLot> lots = productLotRepository.findAllocatableLotsForUpdate(productId, warehouseId);
 
         List<LotAllocation> allocations = new ArrayList<>();
         int remaining = requestedQuantity;
@@ -60,7 +73,7 @@ public class InventoryAllocationService {
 
         if (remaining > 0) {
             throw new InsufficientStockException(
-                    "Insufficient stock for product " + productId + " in warehouse " + warehouseId
+                    "Insufficient stock for product " + productId + " in " + locationDescription
                             + ": missing " + remaining + " unit(s)");
         }
 

@@ -39,4 +39,18 @@ public interface ProductLotRepository extends JpaRepository<ProductLot, UUID> {
             ORDER BY l.expDate ASC
             """)
     List<ProductLot> findAllocatableLotsForUpdate(UUID productId, UUID warehouseId);
+
+    /** Same as {@link #findAllocatableLotsForUpdate} but for stock held at a boutique - used by
+     * the POS/checkout flow, which sells straight out of the shop's own stock rather than a depot. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT l FROM ProductLot l
+            WHERE l.product.id = :productId
+              AND l.boutique.id = :boutiqueId
+              AND l.status = com.finere.scan_and_go_api.domain.enums.LotStatus.ACTIVE
+              AND l.currentQuantity > 0
+              AND l.expDate > CURRENT_DATE
+            ORDER BY l.expDate ASC
+            """)
+    List<ProductLot> findAllocatableLotsForUpdateAtBoutique(UUID productId, UUID boutiqueId);
 }
