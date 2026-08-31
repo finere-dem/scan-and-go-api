@@ -21,7 +21,7 @@ public class PricingPolicyController {
     private final PricingPolicyService pricingPolicyService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'IMPORTER_ADMIN', 'WHOLESALER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'IMPORTER_ADMIN', 'WHOLESALER_ADMIN', 'SALES_STAFF')")
     public ResponseEntity<PricingPolicyResponse> create(@Valid @RequestBody PricingPolicyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(pricingPolicyService.create(request));
     }

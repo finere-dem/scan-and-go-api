@@ -26,7 +26,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StaffService {
 
-    private static final Set<UserRole> ASSIGNABLE_STAFF_ROLES = Set.of(UserRole.ROLE_LOGISTICS_OPERATOR, UserRole.ROLE_BOUTIQUE_STAFF);
+    private static final Set<UserRole> ASSIGNABLE_STAFF_ROLES = Set.of(
+            UserRole.ROLE_LOGISTICS_OPERATOR, UserRole.ROLE_BOUTIQUE_STAFF,
+            UserRole.ROLE_PURCHASE_STAFF, UserRole.ROLE_SALES_STAFF);
 
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
@@ -41,7 +43,8 @@ public class StaffService {
 
         if (!ASSIGNABLE_STAFF_ROLES.contains(request.role())) {
             throw new IllegalArgumentException(
-                    "An organization can only create staff with role LOGISTICS_OPERATOR or BOUTIQUE_STAFF, not " + request.role());
+                    "An organization can only create staff with role LOGISTICS_OPERATOR, BOUTIQUE_STAFF, "
+                            + "PURCHASE_STAFF, or SALES_STAFF, not " + request.role());
         }
         if (userRepository.findByPhone(request.phone()).isPresent()) {
             throw new BadCredentialsException("A user already exists with this phone number");

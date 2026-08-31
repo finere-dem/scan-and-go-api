@@ -24,7 +24,7 @@ public class OrderController {
     private final PriceLabelService priceLabelService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WHOLESALER_ADMIN', 'RETAILER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WHOLESALER_ADMIN', 'RETAILER_ADMIN', 'PURCHASE_STAFF')")
     public ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
     }

@@ -20,7 +20,7 @@ public class LocalRetailPriceController {
     private final LocalRetailPriceService localRetailPriceService;
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'RETAILER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'RETAILER_ADMIN', 'SALES_STAFF')")
     public ResponseEntity<LocalRetailPriceResponse> upsert(@Valid @RequestBody LocalRetailPriceRequest request) {
         return ResponseEntity.ok(localRetailPriceService.upsert(request));
     }

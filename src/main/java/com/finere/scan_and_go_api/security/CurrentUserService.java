@@ -23,9 +23,13 @@ public class CurrentUserService {
     }
 
     public boolean isSuperAdmin() {
+        return hasRole("ROLE_SUPER_ADMIN");
+    }
+
+    /** Role name including the ROLE_ prefix, e.g. "ROLE_SALES_STAFF". */
+    public boolean hasRole(String roleName) {
         return currentAuthentication()
-                .map(auth -> auth.getAuthorities().stream()
-                        .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN")))
+                .map(auth -> auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(roleName)))
                 .orElse(false);
     }
 

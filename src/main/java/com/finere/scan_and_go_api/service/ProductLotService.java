@@ -83,6 +83,9 @@ public class ProductLotService {
     }
 
     private ProductLotResponse toResponse(ProductLot lot) {
+        // Purchase cost is never shown to a sales profile, even for stock they can otherwise see -
+        // confidentiality of what the org paid is separate from visibility of quantities on hand.
+        boolean hideCost = currentUserService.hasRole("ROLE_SALES_STAFF");
         return new ProductLotResponse(
                 lot.getId(),
                 lot.getProduct().getId(),
@@ -93,7 +96,7 @@ public class ProductLotService {
                 lot.getExpDate(),
                 lot.getInitialQuantity(),
                 lot.getCurrentQuantity(),
-                lot.getUnitCost(),
+                hideCost ? null : lot.getUnitCost(),
                 lot.getStatus());
     }
 }
