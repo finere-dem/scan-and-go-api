@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -81,24 +82,37 @@ public class QrCodeGenerationService {
     /** Builds a printable A4 label sheet with one lot-specific QR label per active lot of the product. */
     @Transactional
     public byte[] buildLabelSheetForProduct(UUID productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown product: " + productId));
-        currentUserService.requireSameOrgOrSuperAdmin(product.getImporter().getId());
+        return buildLabelSheetForProducts(List.of(productId));
+    }
 
-        List<ProductLot> activeLots = productLotRepository.findByProductId(productId).stream()
-                .filter(lot -> lot.getStatus() == LotStatus.ACTIVE)
-                .toList();
-
-        if (activeLots.isEmpty()) {
-            throw new IllegalArgumentException("No active lots found for product " + productId);
+    /** Same as {@link #buildLabelSheetForProduct} but for several products at once, combined into
+     * a single printable sheet - the catalog export a retailer/wholesaler actually wants, rather
+     * than downloading one PDF per product one at a time. */
+    @Transactional
+    public byte[] buildLabelSheetForProducts(List<UUID> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one product must be selected");
         }
 
-        List<LabelItem> labelItems = activeLots.stream()
-                .map(lot -> {
-                    QrCodeResult qr = generate(lot.getProduct(), lot, QrMatrixType.LOT_SPECIFIC);
-                    return new LabelItem(lot.getProduct().getName(), lot.getProduct().getSku(), lot.getLotNumber(), qr.pngBytes());
-                })
-                .toList();
+        List<LabelItem> labelItems = new ArrayList<>();
+        for (UUID productId : productIds) {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown product: " + productId));
+            currentUserService.requireSameOrgOrSuperAdmin(product.getImporter().getId());
+
+            List<ProductLot> activeLots = productLotRepository.findByProductId(productId).stream()
+                    .filter(lot -> lot.getStatus() == LotStatus.ACTIVE)
+                    .toList();
+
+            if (activeLots.isEmpty()) {
+                throw new IllegalArgumentException("No active lots found for product " + productId);
+            }
+
+            for (ProductLot lot : activeLots) {
+                QrCodeResult qr = generate(lot.getProduct(), lot, QrMatrixType.LOT_SPECIFIC);
+                labelItems.add(new LabelItem(lot.getProduct().getName(), lot.getProduct().getSku(), lot.getLotNumber(), qr.pngBytes()));
+            }
+        }
 
         return pdfLabelSheetService.renderA4Sheet(labelItems);
     }
