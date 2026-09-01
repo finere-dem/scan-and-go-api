@@ -85,7 +85,11 @@ public class ProductLotService {
     private ProductLotResponse toResponse(ProductLot lot) {
         // Purchase cost is never shown to a sales profile, even for stock they can otherwise see -
         // confidentiality of what the org paid is separate from visibility of quantities on hand.
-        boolean hideCost = currentUserService.hasRole("ROLE_SALES_STAFF");
+        // PURCHASE_STAFF places orders on the org's behalf but doesn't browse existing lot costs
+        // either (see UserRole.ROLE_PURCHASE_STAFF) - both duty-separated roles get the same
+        // blanket masking, since ProductLot has no per-lot "who received this" to key a narrower rule on.
+        boolean hideCost = currentUserService.hasRole("ROLE_SALES_STAFF")
+                || currentUserService.hasRole("ROLE_PURCHASE_STAFF");
         return new ProductLotResponse(
                 lot.getId(),
                 lot.getProduct().getId(),

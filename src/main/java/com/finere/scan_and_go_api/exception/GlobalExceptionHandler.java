@@ -8,8 +8,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
@@ -74,6 +76,27 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT, "This operation conflicts with existing data (duplicate or invalid reference)");
         problem.setTitle("CONFLICT");
+        return problem;
+    }
+
+    /** A required @RequestParam left off the URL (e.g. GET /api/products with no importerId)
+     * should read as a normal 400 telling the caller what's missing - not the 500 it would
+     * otherwise fall through to. */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParam(MissingServletRequestParameterException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Missing required parameter: " + ex.getParameterName());
+        problem.setTitle("BAD_REQUEST");
+        return problem;
+    }
+
+    /** A path/query value that doesn't parse as its declared type (e.g. a malformed UUID)
+     * is a client error, not a server one. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Invalid value for parameter: " + ex.getName());
+        problem.setTitle("BAD_REQUEST");
         return problem;
     }
 
