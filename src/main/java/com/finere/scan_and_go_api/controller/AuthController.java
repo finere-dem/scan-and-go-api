@@ -4,7 +4,6 @@ import com.finere.scan_and_go_api.dto.auth.AuthResponse;
 import com.finere.scan_and_go_api.dto.auth.LoginRequest;
 import com.finere.scan_and_go_api.dto.auth.OrganizationApplicationRequest;
 import com.finere.scan_and_go_api.dto.auth.RefreshRequest;
-import com.finere.scan_and_go_api.dto.auth.RegisterRequest;
 import com.finere.scan_and_go_api.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +17,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
-    @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
-    }
 
     @PostMapping("/apply-organization")
     public ResponseEntity<AuthResponse> applyOrganization(@Valid @RequestBody OrganizationApplicationRequest request) {

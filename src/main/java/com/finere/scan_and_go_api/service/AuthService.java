@@ -8,7 +8,6 @@ import com.finere.scan_and_go_api.dto.auth.AuthResponse;
 import com.finere.scan_and_go_api.dto.auth.LoginRequest;
 import com.finere.scan_and_go_api.dto.auth.OrganizationApplicationRequest;
 import com.finere.scan_and_go_api.dto.auth.RefreshRequest;
-import com.finere.scan_and_go_api.dto.auth.RegisterRequest;
 import com.finere.scan_and_go_api.repository.OrganizationRepository;
 import com.finere.scan_and_go_api.repository.UserRepository;
 import com.finere.scan_and_go_api.security.CustomUserDetails;
@@ -35,30 +34,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
-
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.findByPhone(request.phone()).isPresent()) {
-            throw new BadCredentialsException("A user already exists with this phone number");
-        }
-
-        User user = new User();
-        user.setPhone(request.phone());
-        user.setEmail(request.email());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setRole(request.role());
-
-        if (request.orgId() != null) {
-            Organization org = organizationRepository.findById(request.orgId())
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown organization: " + request.orgId()));
-            user.setOrganization(org);
-        }
-
-        userRepository.save(user);
-        return issueTokens(new CustomUserDetails(user));
-    }
 
     private static final Map<OrgType, UserRole> ADMIN_ROLE_BY_ORG_TYPE = Map.of(
             OrgType.IMPORTER, UserRole.ROLE_IMPORTER_ADMIN,
