@@ -2,6 +2,7 @@ package com.finere.scan_and_go_api.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -60,6 +61,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleIllegalState(IllegalStateException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("CONFLICT");
+        return problem;
+    }
+
+    /** A duplicate/violated DB constraint (e.g. a pricing policy re-submitted for the same
+     * seller+product+target tier, or any other unique/FK/check violation) should read as a normal
+     * 409 CONFLICT to the client - not the generic 500 it would otherwise fall through to. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation", ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "This operation conflicts with existing data (duplicate or invalid reference)");
         problem.setTitle("CONFLICT");
         return problem;
     }
